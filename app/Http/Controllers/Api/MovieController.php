@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\HttpRequest;
 use App\Helpers\HttpResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\MovieResource;
 use Illuminate\Http\Request;
 
 class MovieController extends Controller
@@ -13,7 +14,7 @@ class MovieController extends Controller
 
     public function detail($id)
     {
-        $response = $this->fetchMovieDetail("movie/$id");
+        $response = $this->request("movie/$id");
         return $response->ok() ?
             $this->successDetail($response->json(), "Movie detail") :
             $this->error($response->json());
@@ -21,7 +22,7 @@ class MovieController extends Controller
 
     public function detailImage($id)
     {
-        $response = $this->fetchMovieDetail("movie/$id/images");
+        $response = $this->request("movie/$id/images");
         // dd($response->json());
         return $response->ok() ?
             $this->successDetailImages($response->json(), "Movie detail images") :
@@ -30,15 +31,25 @@ class MovieController extends Controller
 
     public function detailVideo($id)
     {
-        $response = $this->fetchMovieDetail("movie/$id/videos");
+        $response = $this->request("movie/$id/videos");
         return $response->ok() ?
             $this->successDetailVideos($response->json(), "Movie detail trailers") :
             $this->error($response->json());
     }
+
+    // /movie/{movie_id}/credits
+    public function detailCasts($id)
+    {
+        $response = $this->request("movie/$id/credits");
+        return $response->ok() ?
+            $this->successDetailCastAndCrew($response->json(), "Movie detail cast and crew") :
+            $this->error($response->json());
+    }
+
     // movie/{movie_id}/recommendations
     public function recommendation($id)
     {
-        $response = $this->fetchMovies("movie/$id/recommendations");
+        $response = $this->request("movie/$id/recommendations");
         return $response->ok() ?
             $this->success($response->json(), "Recommendation movies list") :
             $this->error($response->json());
@@ -46,16 +57,33 @@ class MovieController extends Controller
     // movie/{movie_id}/similar
     public function similar($id)
     {
-        $response = $this->fetchMovies("movie/$id/similar");
+        $response = $this->request("movie/$id/similar");
         return $response->ok() ?
             $this->success($response->json(), "Similar movies list") :
-            $this->error($response->json());
+            // $this->error($response->json());
+
+            response()->json([
+                "message" => "There is no related movies",
+                // "success" => false,
+                // "errors" => [
+                //     "statusCode" => 404,
+                //     "statusMessage" => "Not Found",
+                // ],
+            ]);
     }
 
+    // collection/{collection_id}
+    public function related($id)
+    {
+        $response = $this->request("collection/$id");
+        return $response->ok() ?
+            $this->successCollections($response->json(), "Related movies list") :
+            $this->error($response->json());
+    }
     // movie/popular
     public function popular()
     {
-        $response = $this->fetchMovies("movie/popular");
+        $response = $this->request("movie/popular");
         return !$response->ok() ?
             $this->error($response->json()) :
             $this->success($response->json(), "Popular movies lists");
@@ -64,7 +92,7 @@ class MovieController extends Controller
     // discover/movie
     public function discover()
     {
-        $response = $this->fetchMovies("discover/movie");
+        $response = $this->request("discover/movie");
         return $response->ok() ?
             $this->success($response->json(), "Discover movies lists") :
             $this->error($response->json());
@@ -73,7 +101,7 @@ class MovieController extends Controller
     // movie/top_rated
     public function topRated()
     {
-        $response = $this->fetchMovies("movie/top_rated");
+        $response = $this->request("movie/top_rated");
         return $response->ok() ?
             $this->success($response->json(), "Top rated movies lists") :
             $this->error($response->json());
@@ -82,7 +110,7 @@ class MovieController extends Controller
     // movie/upcoming
     public function upcoming()
     {
-        $response = $this->fetchMovies("movie/upcoming");
+        $response = $this->request("movie/upcoming");
         return $response->ok() ?
             $this->success($response->json(), "Upcoming movies lists") :
             $this->error($response->json());
@@ -91,43 +119,54 @@ class MovieController extends Controller
     // movie/now_playing
     public function nowPlaying()
     {
-        $response = $this->fetchMovies("movie/now_playing");
+        $response = $this->request("movie/now_playing");
         return $response->ok() ?
             $this->success($response->json(), "Now playing movies lists") :
             $this->error($response->json());
     }
 
     // trending/all/day
-    public function Trending()
+    public function Trending(Request $request)
     {
-        $response = $this->fetchMovies("trending/all/day");
+        // dd($request->page);
+        $page = $request->page ?? 1;
+        $response = $this->request("trending/all/day" . "?page=" . $page);
         return $response->ok() ?
             $this->success($response->json(), "Trending movies and tv lists") :
             $this->error($response->json());
     }
 
-    // trending/movies/day
-    public function TrendingMoviesToday()
+    // trending/movies/{day or week}
+    public function TrendingMovies(Request $request, $time)
     {
-        $response = $this->fetchMovies("trending/movie/day");
-        return $response->ok() ?
-            $this->success($response->json(), "Trending movies lists") :
-            $this->error($response->json());
+        $page = $request->page ?? 1;
+        if ($time === "day" || $time === "week") {
+            $response = $this->request("trending/movie/$time" . "?page=" . $page);
+            return $response->ok() ?
+                $this->success($response->json(), "Trending movies lists") :
+                $this->error($response->json());
+        } else {
+            return response()->json(["message" => "Filter only for day and week"], 303);
+        }
     }
 
-    // trending/tv/day
-    public function TrendingTvToday()
+    // trending/movies/{day or week}
+    public function TrendingTV(Request $request, $time)
     {
-        $response = $this->fetchMovies("trending/tv/day");
-        return $response->ok() ?
-            $this->success($response->json(), "Trending tv lists") :
-            $this->error($response->json());
+        if ($time === "day" || $time === "week") {
+            $response = $this->request("trending/tv/$time");
+            return $response->ok() ?
+                $this->success($response->json(), "Trending TV lists") :
+                $this->error($response->json());
+        } else {
+            return response()->json(["message" => "Filter only for day and week"], 303);
+        }
     }
 
     // movie/latest
     public function latest()
     {
-        $response =  $this->fetchMovies("movie/latest");
+        $response =  $this->request("movie/latest");
         return $response->ok() ?
             $this->successLatest($response->json(), "Latest movie") :
             $this->error($response->json());
@@ -137,9 +176,35 @@ class MovieController extends Controller
     public function search(Request $request)
     {
         $query = $request["query"];
-        $response = $this->fetchMovies("search/movie?query=$query&include_adult=false");
+        $response = $this->request("search/movie?query=$query&include_adult=false");
+        $dataResponse = $response->json();
+        $filteredData = array_filter($dataResponse["results"], function ($movie) {
+            if ($movie["poster_path"] !== null && $movie["vote_average"] > 5) {
+                return $movie;
+            }
+        });
+        $data = count($dataResponse['results']) !== 0 ? MovieResource::collection($filteredData) : null;
+        $statusCode = $data ? 200 : 404;
+
+        // return Genre::all();
+        return response()->json([
+            "statusCode" => $statusCode,
+            "statusMessage" => $data ? "OK" : "Not Found",
+            "message" => $data ? "Searched movies lists" : "No movie found",
+            "page" => $dataResponse["page"],
+            "total_pages" => $dataResponse["total_pages"],
+            "total_results" => $dataResponse["total_results"],
+            "data"   => $data,
+        ], $statusCode);
+    }
+
+    // genre/movie/list
+    public function genres()
+    {
+        // genre/movie/list
+        $response = $this->request("genre/movie/list");
         return $response->ok() ?
-            $this->success($response->json(), "Searched movies list") :
+            $this->success($response->json(), "Genres list") :
             $this->error($response->json());
     }
 }

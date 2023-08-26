@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Movies;
 
+use App\Models\Genre;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,15 +19,17 @@ class DetailResource extends JsonResource
         $img_url = "https://image.tmdb.org/t/p/original";
         $data = [
             "adult" => $this["adult"],
-            "backdrop_path" => $img_url . $this["backdrop_path"],
+            "backdrop" => $img_url . $this["backdrop_path"],
             "belongs_to_collection" => $this["belongs_to_collection"] ? [
                 "id" => $this["belongs_to_collection"]["id"],
                 "name" => $this["belongs_to_collection"]["name"],
-                "poster_path" => $img_url . $this["belongs_to_collection"]["poster_path"],
-                "backdrop_path" => $img_url . $this["belongs_to_collection"]["backdrop_path"],
+                "poster" => $img_url . $this["belongs_to_collection"]["poster_path"],
+                "backdrop" => $img_url . $this["belongs_to_collection"]["backdrop_path"],
             ] : null,
             "budget" => $this["budget"],
-            "genres" => $this["genres"],
+            "genres" => array_map(function ($genre) {
+                return Genre::where("genre_id", $genre)->value('genre');
+            }, $this["genres"]) ?? null,
             "homepage" => $this["homepage"],
             "id" => $this["id"],
             "imdb_id" => $this["imdb_id"],
@@ -34,7 +37,7 @@ class DetailResource extends JsonResource
             "original_title" => $this["original_title"],
             "overview" => $this["overview"],
             "popularity" => $this["popularity"],
-            "poster_path" => $img_url . $this["poster_path"],
+            "poster" => $img_url . $this["poster_path"],
             "production_countries" => $this["production_countries"],
             "production_companies" => array_map(function ($cmp) use ($img_url) {
                 if ($cmp["logo_path"] !== null) {

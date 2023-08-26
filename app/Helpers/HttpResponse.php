@@ -2,10 +2,14 @@
 
 namespace App\Helpers;
 
+use App\Http\Resources\Casts\CastResource;
+use App\Http\Resources\CollectionResource;
 use App\Http\Resources\MovieResource;
+use App\Http\Resources\Movies\CastsResource;
 use App\Http\Resources\Movies\DetailResource;
 use App\Http\Resources\Movies\ImagesResource;
 use App\Http\Resources\Movies\VideosResource;
+use App\Models\Genre;
 
 trait HttpResponse
 {
@@ -14,6 +18,7 @@ trait HttpResponse
         $data = count($movies['results']) !== 0 ? MovieResource::collection($movies['results']) : null;
         $statusCode = $data ? 200 : 404;
         if ($movies) {
+            // return Genre::all();
             return response()->json([
                 "statusCode" => $statusCode,
                 "statusMessage" => $data ? "OK" : "Not Found",
@@ -78,6 +83,49 @@ trait HttpResponse
                 "id" => $movie["id"],
                 "data" => new VideosResource($movie["results"] ?? $movie),
             ]);
+        }
+    }
+
+    protected function successDetailCastAndCrew($movie, $message = null)
+    {
+        if ($movie) {
+            return response()->json([
+                "statusCode" => 200,
+                "statusMessage" => "OK",
+                "message" => $message,
+                "page" => 1,
+                "id" => $movie["id"],
+                "data" => new CastsResource($movie["results"] ?? $movie),
+            ], 200);
+        }
+    }
+
+    protected function successCollections($movie, String $message = null)
+    {
+        if ($movie) {
+            return response()->json([
+                "statusCode" => 200,
+                "statusMessage" => "OK",
+                "message" => $message,
+                "page" => 1,
+                "id" => $movie["id"],
+                "data" => new CollectionResource($movie)
+            ], 200);
+        }
+    }
+
+    protected function successCasts($casts, $message = null)
+    {
+        if ($casts) {
+            return response()->json([
+                "statusCode" => 200,
+                "statusMessage" => "OK",
+                "message" => $message,
+                "page" => $casts["page"] ?? null,
+                "total_pages" => $casts["total_pages"] ?? null,
+                "total_results" => $casts["total_results"] ?? null,
+                "data" => new CastResource($casts)
+            ], 200);
         }
     }
 

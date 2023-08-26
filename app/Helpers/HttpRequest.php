@@ -8,27 +8,17 @@ use Illuminate\Support\Facades\Http;
 trait HttpRequest
 {
     use HttpResponse, NetworkErrorHandler;
-    protected function endpoint($uri, $lang = true)
+    protected function endpoint($uri, $lang = false)
     {
         $setLang = $lang ? "?language=en-US" : "";
         return config("tmdb.endpoint") . $uri . $setLang;
     }
 
-    protected function fetchMovies($uri)
+    protected function request($uri, $setLang = false)
     {
-        $response = Http::withHeaders([
+        return Http::withHeaders([
             "Accept" => "application/json",
             "Authorization" => "Bearer " . config("tmdb.api_auth")
-        ])->timeout(10)->get($this->endpoint($uri, false));
-        return $response;
-    }
-
-    protected function fetchMovieDetail($uri)
-    {
-        $response = Http::withHeaders([
-            "Accept" => "application/json",
-            "Authorization" => "Bearer " . config("tmdb.api_auth")
-        ])->timeout(10)->get($this->endpoint($uri, false));
-        return $response;
+        ])->timeout(30)->get($this->endpoint($uri, $setLang));
     }
 }

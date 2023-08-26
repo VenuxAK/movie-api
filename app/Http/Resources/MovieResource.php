@@ -2,8 +2,11 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Genre;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+
+use function PHPSTORM_META\map;
 
 class MovieResource extends JsonResource
 {
@@ -14,7 +17,6 @@ class MovieResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-
         $data = [
             "id" => $this["id"] ?? null,
             "title" => $this["title"] ?? null,
@@ -27,7 +29,9 @@ class MovieResource extends JsonResource
             "backdrop" => $this["backdrop_path"] ? "https://image.tmdb.org/t/p/original" . $this["backdrop_path"] : null,
             "poster" => $this["poster_path"] ? "https://image.tmdb.org/t/p/original" . $this["poster_path"] : null,
             "media_type" => $this["media_type"] ?? null,
-            "genre_ids" => $this["genre_ids"] ?? null,
+            "genres" => array_map(function ($genre) {
+                return Genre::where("genre_id", $genre)->value('genre');
+            }, $this["genre_ids"]) ?? null,
             "adult" => $this["adult"] ?? null,
             "popularity" => $this["popularity"] ?? null,
             "vote_average" => $this["vote_average"] ?? null,
